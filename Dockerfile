@@ -4,7 +4,7 @@
 # and the NEWEST Bitcoin Knots release (KNOTS_TAG) as the only bitcoind. The workflow works out KNOTS_TAG by itself,
 # so nothing here is pinned to one release.
 #
-# docker buildx build -f Dockerfile --build-arg KNOTS_TAG=v29.4.knots20260508 <patched umbrel-bitcoin checkout>
+# docker buildx build -f Dockerfile --build-context ours=<this repo> --build-arg KNOTS_TAG=v29.4.knots20260508 <patched umbrel-bitcoin checkout>
 
 ###########################################
 # bitcoind + bitcoin-cli, from the official release, checksum-verified
@@ -13,33 +13,10 @@ FROM debian:bookworm-slim AS knots
 ARG KNOTS_TAG
 ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
-RUN set -eu; \
-    test -n "$KNOTS_TAG" || { echo "KNOTS_TAG is required" >&2; exit 1; }; \
-    ver="${KNOTS_TAG#v}"; major="${ver%%.*}"; \
+COPY --from=ours tools/fetch_knots.sh /usr/local/bin/fetch_knots.sh
+RUN test -n "$KNOTS_TAG" || { echo "KNOTS_TAG is required" >&2; exit 1; }; \
     case "$TARGETARCH" in amd64) arch=x86_64-linux-gnu;; arm64) arch=aarch64-linux-gnu;; *) echo "unsupported arch $TARGETARCH" >&2; exit 1;; esac; \
-    file="bitcoin-${ver}-${arch}.tar.gz"; \
-    mkdir /dl && cd /dl; \
-    site="https://bitcoinknots.org/files/${major}.x/${ver}"; \
-    gh="https://github.com/bitcoinknots/bitcoin/releases/download/${KNOTS_TAG}"; \
-    got=""; \
-    for base in "$site" "$gh"; do \
-      if curl -fsSL --retry 3 -o "SHA256SUMS.$(echo $base | cut -d/ -f3)" "$base/SHA256SUMS"; then got="$got $base"; fi; \
-    done; \
-    test -n "$got" || { echo "no SHA256SUMS found for $KNOTS_TAG" >&2; exit 1; }; \
-    # when both hosts publish the list they must agree, so one compromised host cannot slip a binary through
-    n=0; for s in SHA256SUMS.*; do n=$((n+1)); done; \
-    if [ "$n" -gt 1 ]; then cmp SHA256SUMS.* || { echo "SHA256SUMS differ between hosts" >&2; exit 1; }; fi; \
-    sums="$(ls SHA256SUMS.* | head -1)"; \
-    grep -E "[ *]${file}\$" "$sums" > want.sum || { echo "$file is not in SHA256SUMS" >&2; exit 1; }; \
-    ok=""; \
-    for base in $got; do \
-      if curl -fsSL --retry 3 -o "$file" "$base/$file" && sha256sum -c want.sum; then ok=1; break; fi; \
-    done; \
-    test -n "$ok" || { echo "could not download a verified $file" >&2; exit 1; }; \
-    tar xzf "$file"; \
-    mkdir -p /out; \
-    cp "bitcoin-${ver}/bin/bitcoind" "bitcoin-${ver}/bin/bitcoin-cli" /out/; \
-    /out/bitcoind -version | head -1
+    sh /usr/local/bin/fetch_knots.sh "$KNOTS_TAG" "$arch" /out
 
 ##########################################################
 # Dependencies layer: install every workspace's deps
