@@ -1,0 +1,133 @@
+/* Bitcoin Knots for Umbrel: monochrome theme, matching Blake2b ASIC Control, DATUM Gateway and Mempool.
+   Black page, white text, greys for everything else. Only states keep colour:
+   green = good, yellow = warning, red = failed. Orange (the old brand colour) becomes white/grey.
+   This file is loaded after the app's own stylesheet (see tools/patch_ui.py). */
+
+:root,
+.dark {
+	color-scheme: dark;
+	--radius: 0.625rem;
+	--background: #000000;
+	--foreground: #f4f4f4;
+	--card: #0e0e0e;
+	--card-foreground: #f4f4f4;
+	--popover: #141414;
+	--popover-foreground: #f4f4f4;
+	--primary: #f4f4f4;
+	--primary-foreground: #000000;
+	--secondary: #1a1a1a;
+	--secondary-foreground: #f4f4f4;
+	--muted: #1a1a1a;
+	--muted-foreground: #a0a0a0;
+	--accent: #222222;
+	--accent-foreground: #f4f4f4;
+	--destructive: #ff6b6b;
+	--border: #2c2c2c;
+	--input: #2c2c2c;
+	--ring: #7a7a7a;
+	--chart-1: #f4f4f4;
+	--chart-2: #b8b8b8;
+	--chart-3: #8c8c8c;
+	--chart-4: #6a6a6a;
+	--chart-5: #4a4a4a;
+	--sidebar: #0e0e0e;
+	--sidebar-foreground: #f4f4f4;
+	--sidebar-primary: #f4f4f4;
+	--sidebar-primary-foreground: #000000;
+	--sidebar-accent: #222222;
+	--sidebar-accent-foreground: #f4f4f4;
+	--sidebar-border: #2c2c2c;
+	--sidebar-ring: #7a7a7a;
+}
+
+html,
+body {
+	background: #000;
+	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* faint grid, like the other apps */
+body {
+	background-image:
+		linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+	background-size: 32px 32px;
+	background-attachment: fixed;
+}
+
+/* numbers read as numbers */
+.tabular-nums,
+.font-mono {
+	font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+}
+
+/* headings: plain sans, no display font */
+.font-outfit {
+	font-family: inherit;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+/* buttons, inputs and panels share one corner radius */
+button,
+input,
+select,
+textarea,
+[role='combobox'],
+[role='dialog'] {
+	border-radius: 10px;
+}
+
+[role='dialog'] {
+	background: #0e0e0e;
+	border: 1px solid #2c2c2c;
+}
+
+/* the primary button: white on black, like the active tab elsewhere */
+button[class*='bg-primary'],
+button[data-variant='default'] {
+	background: #f4f4f4;
+	color: #000;
+	font-weight: 600;
+}
+
+/* the old orange accent, in every place it can show up */
+[class*='text-[#FF7E05]'],
+[class*='text-orange-'] {
+	color: #f4f4f4 !important;
+}
+[class*='bg-orange-'] {
+	background-color: #f4f4f4 !important;
+	color: #000 !important;
+}
+[class*='border-orange-'] {
+	border-color: #8c8c8c !important;
+}
+[fill='#FF7E05' i],
+[fill='#C85B1D' i],
+[fill='#9C4C00' i],
+[fill='#BE3600' i] {
+	fill: #f4f4f4;
+}
+[stroke='#FF7E05' i],
+[stroke='#C85B1D' i] {
+	stroke: #f4f4f4;
+}
+stop[stop-color='#FF7E05' i],
+stop[stop-color='#C85B1D' i],
+stop[stop-color='#9C4C00' i],
+stop[stop-color='#BE3600' i] {
+	stop-color: #cfcfcf;
+}
+stop[stop-color='#2E0701' i] {
+	stop-color: #1a1a1a;
+}
+/* the connect dialog draws its own svg stroke inside a <style> block */
+.recharts-surface [stroke='#FF7E05' i] {
+	stroke: #f4f4f4;
+}
+
+/* scrollbars */
+* {
+	scrollbar-color: #3a3a3a transparent;
+}

@@ -1,0 +1,96 @@
+manifestVersion: 1.1
+id: blake2b-bitcoinknots
+category: bitcoin
+name: Bitcoin Knots (blake2b)
+implements:
+  - bitcoin
+version: "29.4.3-knots.20260508"
+tagline: Your own node on the newest Bitcoin Knots, always
+icon: https://raw.githubusercontent.com/christhealien/bitcoinknots-umbrel/master/blake2b-bitcoinknots/icon.svg
+description: >-
+  Run your personal Bitcoin node on Bitcoin Knots, in the same monochrome look as Blake2b ASIC Control,
+  DATUM Gateway and Mempool.
+
+
+  This app is not tied to one Knots release. A build runs every day, and as soon as Bitcoin Knots publishes a
+  new stable release (release candidates are skipped) it is downloaded, checked against the published
+  SHA256SUMS and packaged as a new version of this app, so an app update brings you the newest Knots.
+  The Bitcoin Knots version you are running is shown at the top of the app.
+
+
+  It is built on the Bitcoin Node app by Horizon-btc (a fork of the Umbrel app) and keeps its settings,
+  Tor and I2P support, and the same ports, so Electrs, DATUM Gateway and Mempool work with it as with
+  any other Bitcoin node app.
+
+
+  To forward incoming peer traffic to your device, set up the following configuration: (router) 9333 -> (device) 9333
+
+
+  Moving from the Bitcoin Knots app of another store: the data folder is not shared between apps. Stop
+  that app, then copy its data/bitcoin folder into this app's data/bitcoin folder before the first start, or
+  expect a full sync. Do not run both at once: they use the same ports.
+
+
+  Powered by Bitcoin Knots: https://bitcoinknots.org/
+developer: Bitcoin Knots (upstream); theme and packaging by christhealien
+website: https://github.com/christhealien/bitcoinknots-umbrel
+dependencies: []
+repo: https://github.com/christhealien/bitcoinknots-umbrel
+support: https://github.com/christhealien/bitcoinknots-umbrel/issues
+port: 2113
+gallery: []
+path: ""
+defaultPassword: ""
+releaseNotes: >-
+  Bitcoin Knots v29.4.3.knots20260508.
+widgets:
+  - id: "stats"
+    type: "four-stats"
+    refresh: "5s"
+    endpoint: "app:3000/api/widget/stats"
+    link: ""
+    example:
+      type: "four-stats"
+      link: ""
+      items:
+        - title: "Connections"
+          text: "11"
+          subtext: "peers"
+        - title: "Mempool"
+          text: "257"
+          subtext: "MB"
+        - title: "Hashrate"
+          text: "590"
+          subtext: "EH/s"
+        - title: "Blockchain size"
+          text: "600"
+          subtext: "GB"
+  - id: "sync"
+    type: "text-with-progress"
+    refresh: "2s"
+    endpoint: "app:3000/api/widget/sync"
+    link: ""
+    example:
+      type: "text-with-progress"
+      link: ""
+      title: "Blockchain sync"
+      text: "83%"
+      progressLabel: "In progress"
+      progress: 0.83
+backupIgnore:
+  - data/bitcoin/blocks
+  - data/bitcoin/chainstate
+  - data/bitcoin/indexes
+  - data/bitcoin/testnet3/blocks
+  - data/bitcoin/testnet3/chainstate
+  - data/bitcoin/testnet3/indexes
+  - data/bitcoin/testnet4/blocks
+  - data/bitcoin/testnet4/chainstate
+  - data/bitcoin/testnet4/indexes
+  - data/bitcoin/signet/blocks
+  - data/bitcoin/signet/chainstate
+  - data/bitcoin/signet/indexes
+  - data/bitcoin/regtest/blocks
+  - data/bitcoin/regtest/chainstate
+  - data/bitcoin/regtest/indexes
+submitter: christhealien
