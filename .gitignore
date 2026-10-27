@@ -1,0 +1,4 @@
+*.pyc
+__pycache__/
+blake2b-bitcoinknots/data/**
+!blake2b-bitcoinknots/data/**/.gitkeep

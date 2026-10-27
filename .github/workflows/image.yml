@@ -1,0 +1,176 @@
+name: image
+# Builds the Bitcoin Knots app image (amd64 + arm64) and publishes it to ghcr.io/<owner>/blake2b-bitcoinknots.
+#
+# It never needs a release to be picked by hand:
+#  * every day (and on "Run workflow") it asks bitcoinknots/bitcoin for its newest STABLE release tag. If that is not
+#    the one in KNOTS_TAG yet, it points the app folder at it (version, release notes, image tag), commits that to
+#    master, tags it knots-v<version> and builds it. Nothing new -> nothing happens.
+#  * pushing a tag by hand (knots-v<version>) builds what is in the repo at that tag (use it for theme changes, after
+#    running tools/bump.py KNOTS_TAG --rev N).
+# Afterwards the app folder is copied into the store repo christhealien/blake2b (needs the STORE_TOKEN secret; without
+# it the store's own sync picks the new tag up).
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild even if the Knots release is already built (adds a revision number)"
+        type: boolean
+        default: false
+  push:
+    tags: ["knots-v*"]
+permissions:
+  contents: write
+  packages: write
+concurrency:
+  group: knots-image
+  cancel-in-progress: false
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  UI_REPO: Horizon-btc/umbrel-bitcoin
+  UI_REF: master
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.r.outputs.build }}
+      ref: ${{ steps.r.outputs.ref }}
+      knots: ${{ steps.r.outputs.knots }}
+      version: ${{ steps.r.outputs.version }}
+      image: ${{ steps.r.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: r
+        env:
+          EVENT: ${{ github.event_name }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -eu
+          if [ "$EVENT" = "push" ]; then
+            # a tag pushed by hand: build exactly what the repo holds at that tag
+            knots="$(tr -d '[:space:]' < KNOTS_TAG)"
+            version="$(sed -n 's/^version: "\(.*\)"$/\1/p' blake2b-bitcoinknots/umbrel-app.yml | head -1)"
+            image="$(sed -n 's|.*blake2b-bitcoinknots:\(\S*\).*|\1|p' blake2b-bitcoinknots/docker-compose.yml | head -1)"
+            test "knots-v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME does not match app version $version" >&2; exit 1; }
+            { echo build=true; echo ref="$GITHUB_REF_NAME"; echo knots="$knots"; echo version="$version"; echo image="$image"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          latest="$(sh tools/latest_knots.sh)"
+          test -n "$latest" || { echo "could not find a Knots release" >&2; exit 1; }
+          current="$(tr -d '[:space:]' < KNOTS_TAG)"
+          echo "newest Knots release: $latest (built so far: $current)"
+          rev=0
+          if [ "$latest" = "$current" ]; then
+            if [ "$FORCE" != "true" ]; then echo "build=false" >> "$GITHUB_OUTPUT"; echo "Nothing new."; exit 0; fi
+            rev="$(git tag -l "knots-v*" | grep -c "knots\.${latest##*knots}" || true)"
+            [ "$rev" -ge 1 ] || rev=1
+            rev=$((rev + 1))
+          fi
+          out="$(python3 tools/bump.py "$latest" --rev "$rev")"
+          echo "$out"
+          version="$(echo "$out" | sed -n 's/^VERSION=//p')"
+          image="$(echo "$out" | sed -n 's/^IMAGE_TAG=//p')"
+          tag="$(echo "$out" | sed -n 's/^TAG=//p')"
+          git config user.name github-actions
+          git config user.email actions@users.noreply.github.com
+          git add -A
+          git commit -m "Bitcoin Knots $latest ($version)"
+          git tag "$tag"
+          git push origin HEAD:"${GITHUB_REF_NAME}" "$tag"
+          { echo build=true; echo ref="$tag"; echo knots="$latest"; echo version="$version"; echo image="$image"; } >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: resolve
+    if: needs.resolve.outputs.build == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ours
+          ref: ${{ needs.resolve.outputs.ref }}
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.UI_REPO }}
+          ref: ${{ env.UI_REF }}
+          path: up
+      - name: Patch the Bitcoin Node app for this Knots release
+        run: python3 -I ours/tools/patch_ui.py up "${{ needs.resolve.outputs.knots }}"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: up
+          file: ours/Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          push: true
+          build-args: KNOTS_TAG=${{ needs.resolve.outputs.knots }}
+          tags: ghcr.io/${{ github.repository_owner }}/blake2b-bitcoinknots:${{ needs.resolve.outputs.image }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=knots-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=knots-${{ matrix.arch }}
+
+  manifest:
+    needs: [resolve, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Join the amd64 and arm64 images
+        env:
+          IMG: ghcr.io/${{ github.repository_owner }}/blake2b-bitcoinknots
+          TAG: ${{ needs.resolve.outputs.image }}
+        run: |
+          set -eu
+          docker buildx imagetools create -t "$IMG:$TAG" -t "$IMG:latest" "$IMG:$TAG-amd64" "$IMG:$TAG-arm64"
+
+  store:
+    needs: [resolve, manifest]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+      - name: Update the store repo
+        env:
+          STORE_TOKEN: ${{ secrets.STORE_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+        run: |
+          set -eu
+          if [ -z "$STORE_TOKEN" ]; then echo "::notice::STORE_TOKEN is not set: the store's own sync-apps workflow will pick this release up"; exit 0; fi
+          auth="$(printf 'x-access-token:%s' "$STORE_TOKEN" | base64 -w0)"
+          echo "::add-mask::$auth"
+          if ! git -c "http.extraHeader=Authorization: Basic $auth" clone "https://github.com/$OWNER/blake2b.git" /tmp/store; then
+            echo "::warning::Could not clone $OWNER/blake2b (check STORE_TOKEN). The store's sync-apps workflow will still pick this release up."
+            exit 0
+          fi
+          rm -rf /tmp/store/blake2b-bitcoinknots
+          cp -r blake2b-bitcoinknots /tmp/store/
+          cd /tmp/store
+          git add -A
+          git diff --cached --quiet && { echo "store already up to date"; exit 0; }
+          git -c user.name=github-actions -c user.email=actions@users.noreply.github.com commit -m "blake2b-bitcoinknots $VERSION"
+          branch="$(git rev-parse --abbrev-ref HEAD)"
+          if ! git -c "http.extraHeader=Authorization: Basic $auth" push origin "HEAD:$branch"; then
+            echo "::warning::Push to $OWNER/blake2b was refused (token needs Contents: write). The store's sync-apps workflow will still pick this release up."
+            exit 0
+          fi
