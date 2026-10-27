@@ -126,6 +126,17 @@ def cosmetic(up):
         for pat, new in pairs:
             s = re.sub(pat, new, s)
         edits.append((rel, s))
+    # svg icons (dock, peer dots...) carry their own orange
+    d = os.path.join(up, UI + "assets")
+    if os.path.isdir(d):
+        for n in sorted(os.listdir(d)):
+            if not n.endswith(".svg") or n == "logo.svg":
+                continue
+            rel = UI + "assets/" + n
+            s = rd(up, rel)
+            t = re.sub(r"#(?:ED7300|F86600|FF7E05|C85B1D|BE3600|9C4C00)", "#f4f4f4", s, flags=re.I)
+            if t != s:
+                edits.append((rel, t))
     return edits, warns
 
 
