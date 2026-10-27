@@ -117,6 +117,8 @@ jobs:
         with:
           context: up
           file: ours/Dockerfile
+          build-contexts: |
+            ours=ours
           platforms: linux/${{ matrix.arch }}
           push: true
           build-args: KNOTS_TAG=${{ needs.resolve.outputs.knots }}
