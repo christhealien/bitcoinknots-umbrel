@@ -26,8 +26,11 @@ done
 if [ -z "$got" ]; then
   echo "ERROR: no SHA256SUMS found for $tag at any source." >&2
   for base in $SITES; do
-    echo "--- what $base/ offers:" >&2
-    curl -sSL -A "$UA" -m 30 "$base/" 2>&1 | grep -oE 'href="[^"]+"' | head -40 >&2 || true
+    for dir in "$base/" "${base%/*}/"; do
+      code="$(curl -sSL -A "$UA" -m 30 -o page.html -w '%{http_code}' "$dir" 2>/dev/null || true)"
+      echo "--- $dir -> HTTP ${code:-none}; links on it:" >&2
+      grep -oE 'href="[^"]+"' page.html 2>/dev/null | head -40 >&2 || true
+    done
   done
   exit 1
 fi
