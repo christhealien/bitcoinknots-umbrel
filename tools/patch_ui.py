@@ -78,6 +78,57 @@ def plan(up, tag):
     return edits, bad
 
 
+# Cosmetic recolour: orange -> greys. Missing anchors only warn (upstream may move things), never fail the build.
+UI = "apps/ui/src/"
+COSMETIC = [
+    (UI + "pages/home/PeersChart.tsx", [
+        ("hsl(29 100% 51%)", "hsl(0 0% 94%)"), ("hsl(29 100% 30%)", "hsl(0 0% 55%)"), ("hsl(29 100% 15%)", "hsl(0 0% 30%)")]),
+    (UI + "pages/home/Globe.tsx", [
+        ("const PEER_DOT_COLOR = 'hsl(29,100%,60%)'", "const PEER_DOT_COLOR = '#bdbdbd'"),
+        ("const ARC_COLOR = 'hsl(29,100%,60%)'", "const ARC_COLOR = '#f4f4f4'"),
+        ("const TX_SPHERE_COLOR = 'hsl(29,90%,70%)'", "const TX_SPHERE_COLOR = '#e0e0e0'")]),
+    (UI + "pages/home/GlobeInfo.tsx", [("Orange dots are", "Grey dots are")]),
+    (UI + "pages/home/Blocks/Transactions.tsx", [
+        ("vec3(0.180, 0.027, 0.004)", "vec3(0.07, 0.07, 0.07)"), ("vec3(0.745, 0.212, 0.0)", "vec3(0.42, 0.42, 0.42)"),
+        ("vec3(0.933, 0.690, 0.027)", "vec3(0.85, 0.85, 0.85)"), ("vec3(0.784, 0.357, 0.114)", "vec3(0.30, 0.30, 0.30)"),
+        ("vec3(0.992, 0.820, 0.0)", "vec3(0.70, 0.70, 0.70)"), ("vec3(1.0, 0.984, 0.769)", "vec3(1.0, 1.0, 1.0)")]),
+    (UI + "pages/home/Blocks/liquidShader.ts", [
+        ("vec3(0.180, 0.027, 0.004)", "vec3(0.07, 0.07, 0.07)"), ("vec3(0.745, 0.212, 0.0)", "vec3(0.42, 0.42, 0.42)")]),
+    (UI + "pages/settings/Toggle.tsx", [
+        ("data-[state=checked]:bg-[hsl(29_100%_47%)]", "data-[state=checked]:bg-[#f4f4f4]"),
+        ("hsla(29_100%_51%_0.2)", "hsla(0_0%_100%_0.12)")]),
+    (UI + "components/ConnectionDetails.tsx", [
+        ("fgColor='#9C4C00'", "fgColor='#000000'"), ("bgColor='transparent'", "bgColor='#ffffff'"),
+        ("stroke: #FF7E05 !important", "stroke: #000000 !important")]),
+]
+REGEX = [(UI + "pages/insights/" + n, [(r"hsla\(29,\s*100%,\s*51%,", "hsla(0,0%,94%,"), (r"hsl\(29 100% 51%\)", "hsl(0 0% 94%)"),
+         (r"#FF7E05", "#f4f4f4")]) for n in ("BlockSizeChart.tsx", "BlockRewardsChart.tsx", "FeeRateChart.tsx")]
+
+
+def cosmetic(up):
+    edits, warns = [], []
+    for rel, pairs in COSMETIC:
+        try:
+            s = rd(up, rel)
+        except OSError:
+            warns.append("%s: missing" % rel); continue
+        for old, new in pairs:
+            if old in s:
+                s = s.replace(old, new)
+            elif new not in s:
+                warns.append("%s: anchor %r not found" % (rel, old))
+        edits.append((rel, s))
+    for rel, pairs in REGEX:
+        try:
+            s = rd(up, rel)
+        except OSError:
+            warns.append("%s: missing" % rel); continue
+        for pat, new in pairs:
+            s = re.sub(pat, new, s)
+        edits.append((rel, s))
+    return edits, warns
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     if len(args) != 2:
@@ -94,6 +145,11 @@ def main():
         print("OK  patch fits this upstream"); return 0
     for rel, s in edits:
         wr(up, rel, s)
+    ce, warns = cosmetic(up)
+    for rel, s in ce:
+        wr(up, rel, s)
+    for w in warns:
+        print("WARN ", w)
     ui = os.path.join(HERE, "overlay/ui")
     shutil.copy(os.path.join(ui, "blake2b-theme.css"), os.path.join(up, "apps/ui/src/blake2b-theme.css"))
     shutil.copy(os.path.join(ui, "logo.svg"), os.path.join(up, "apps/ui/src/assets/logo.svg"))

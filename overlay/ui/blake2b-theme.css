@@ -84,8 +84,8 @@ textarea,
 }
 
 /* the primary button: white on black, like the active tab elsewhere */
-button[class*='bg-primary'],
-button[data-variant='default'] {
+button[class*='bg-primary']:not([class*='bg-button-gradient']),
+button[data-variant='default']:not([class*='bg-button-gradient']) {
 	background: #f4f4f4;
 	color: #000;
 	font-weight: 600;
@@ -125,6 +125,19 @@ stop[stop-color='#2E0701' i] {
 /* the connect dialog draws its own svg stroke inside a <style> block */
 .recharts-surface [stroke='#FF7E05' i] {
 	stroke: #f4f4f4;
+}
+
+/* the Connect button is a dark pill with light text */
+button[class*='bg-button-gradient'] {
+	background: #141414;
+	border: 1px solid #3a3a3a;
+	color: #f4f4f4;
+}
+button[class*='bg-button-gradient'] span {
+	color: #f4f4f4;
+}
+button[class*='bg-button-gradient'] svg {
+	color: #cfcfcf;
 }
 
 /* scrollbars */
