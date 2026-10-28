@@ -144,3 +144,38 @@ button[class*='bg-button-gradient'] svg {
 * {
 	scrollbar-color: #3a3a3a transparent;
 }
+
+/* ---- theme switch ---- */
+.b2b-theme-btn {
+	height: 36px;
+	width: 36px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 10px;
+	background: #141414;
+	border: 1px solid #3a3a3a;
+	color: #f4f4f4;
+	cursor: pointer;
+	transition: border-color 0.15s, background 0.15s;
+}
+.b2b-theme-btn:hover {
+	border-color: #8c8c8c;
+	background: #1c1c1c;
+}
+
+/* Light theme: the black-and-white design inverted. Status colours keep their hue, the QR code is flipped back. */
+html[data-theme='light'] {
+	filter: invert(1) hue-rotate(180deg);
+}
+html[data-theme='light'] .b2b-qr {
+	filter: invert(1) hue-rotate(180deg);
+}
+html {
+	transition: filter 0.2s;
+}
+
+/* latest blocks strip */
+.b2b-block {
+	transition: border-color 0.15s, background 0.15s;
+}
