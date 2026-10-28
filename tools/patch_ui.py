@@ -99,7 +99,8 @@ COSMETIC = [
         ("hsla(29_100%_51%_0.2)", "hsla(0_0%_100%_0.12)")]),
     (UI + "components/ConnectionDetails.tsx", [
         ("fgColor='#9C4C00'", "fgColor='#000000'"), ("bgColor='transparent'", "bgColor='#ffffff'"),
-        ("stroke: #FF7E05 !important", "stroke: #000000 !important")]),
+        ("stroke: #FF7E05 !important", "stroke: #000000 !important"),
+        ("<div className='p-2 rounded-md'>", "<div className='p-2 rounded-md b2b-qr'>")]),
 ]
 REGEX = [(UI + "pages/insights/" + n, [(r"hsla\(29,\s*100%,\s*51%,", "hsla(0,0%,94%,"), (r"hsl\(29 100% 51%\)", "hsl(0 0% 94%)"),
          (r"#FF7E05", "#f4f4f4")]) for n in ("BlockSizeChart.tsx", "BlockRewardsChart.tsx", "FeeRateChart.tsx")]
@@ -140,6 +141,44 @@ def cosmetic(up):
     return edits, warns
 
 
+def redesign(up):
+    """Flat block cards, the light/dark switch and the early theme script. Every piece is optional (warns, never breaks the build)."""
+    ui = os.path.join(HERE, "overlay/ui")
+    out, warns = [], []
+    src = os.path.join(up, UI)
+    # flat blocks strip replaces the 3D scene
+    blocks_dir = os.path.join(src, "pages/home/Blocks")
+    if os.path.isdir(blocks_dir):
+        shutil.copy(os.path.join(ui, "blocks-flat.tsx"), os.path.join(blocks_dir, "index.tsx"))
+    else:
+        warns.append("pages/home/Blocks not found: block cards keep the original art")
+    # theme switch in the header: both edits or none
+    shutil.copy(os.path.join(ui, "ThemeToggle.tsx"), os.path.join(src, "components/ThemeToggle.tsx"))
+    hp = os.path.join(src, "components/Layout/Header.tsx")
+    h = open(hp, encoding="utf-8").read()
+    imp = "import ConnectionDetails from '@/components/ConnectionDetails'"
+    pat = re.compile(r"\{/\* Connect button \+ modal \*/\}\s*<ConnectionDetails />")
+    if "ThemeToggle" in h:
+        pass
+    elif h.count(imp) == 1 and len(pat.findall(h)) == 1:
+        h = h.replace(imp, imp + "\nimport ThemeToggle from '@/components/ThemeToggle'")
+        h = pat.sub("<div className='flex items-center gap-2'><ThemeToggle /><ConnectionDetails /></div>", h)
+        open(hp, "w", encoding="utf-8").write(h)
+    else:
+        warns.append("Layout/Header.tsx: connect button anchor not found, no theme switch")
+    # remember the choice before the first paint
+    ip = os.path.join(up, "apps/ui/index.html")
+    t = open(ip, encoding="utf-8").read()
+    snippet = "<script>try{if(localStorage.getItem('bk-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}</script>"
+    if "bk-theme" in t:
+        pass
+    elif t.count("</head>") == 1:
+        open(ip, "w", encoding="utf-8").write(t.replace("</head>", snippet + "\n</head>"))
+    else:
+        warns.append("index.html: </head> not found, theme is not restored before first paint")
+    return warns
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     if len(args) != 2:
@@ -159,7 +198,7 @@ def main():
     ce, warns = cosmetic(up)
     for rel, s in ce:
         wr(up, rel, s)
-    for w in warns:
+    for w in warns + redesign(up):
         print("WARN ", w)
     ui = os.path.join(HERE, "overlay/ui")
     shutil.copy(os.path.join(ui, "blake2b-theme.css"), os.path.join(up, "apps/ui/src/blake2b-theme.css"))
