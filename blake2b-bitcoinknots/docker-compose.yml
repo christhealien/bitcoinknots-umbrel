@@ -7,7 +7,7 @@ services:
       APP_PORT: 3000
   
   app:
-    image: ghcr.io/christhealien/blake2b-bitcoinknots:29.4.3.knots20260508-1
+    image: ghcr.io/christhealien/blake2b-bitcoinknots:29.4.3.knots20260508-2
     user: "1000:1000"
     restart: on-failure
     stop_grace_period: 15m30s

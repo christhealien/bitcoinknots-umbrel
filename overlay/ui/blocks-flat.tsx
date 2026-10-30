@@ -49,7 +49,7 @@ function BlockCard({block, newest, now}: {block: Block; newest: boolean; now: nu
 			title={`${block.hash}\nClick to copy the block hash`}
 			className={
 				'b2b-block flex-1 min-w-0 h-full rounded-[10px] border p-3 text-left flex flex-col justify-between cursor-pointer ' +
-				(newest ? 'border-white/45 bg-white/[0.07]' : 'border-white/12 bg-white/[0.03] hover:border-white/30')
+				(newest ? 'b2b-block-new border-white/45 bg-white/[0.07]' : 'border-white/12 bg-white/[0.03] hover:border-white/30')
 			}
 		>
 			<div>

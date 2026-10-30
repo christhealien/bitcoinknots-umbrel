@@ -4,7 +4,7 @@ category: bitcoin
 name: Bitcoin Knots (blake2b)
 implements:
   - bitcoin
-version: "29.4.3-knots.20260508.1"
+version: "29.4.3-knots.20260508.2"
 tagline: Your own node on the newest Bitcoin Knots, always
 icon: https://raw.githubusercontent.com/christhealien/bitcoinknots-umbrel/master/blake2b-bitcoinknots/icon.svg
 description: >-
@@ -42,7 +42,7 @@ gallery: []
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Redesign: flat monochrome block cards, light/dark switch
+  Light theme contrast, clearer toggles, last orange removed from the rewards chart
 widgets:
   - id: "stats"
     type: "four-stats"
