@@ -96,6 +96,9 @@ COSMETIC = [
         ("vec3(0.180, 0.027, 0.004)", "vec3(0.07, 0.07, 0.07)"), ("vec3(0.745, 0.212, 0.0)", "vec3(0.42, 0.42, 0.42)")]),
     (UI + "pages/settings/Toggle.tsx", [
         ("data-[state=checked]:bg-[hsl(29_100%_47%)]", "data-[state=checked]:bg-[#f4f4f4]"),
+        ("data-disabled:bg-[hsl(0_0%_15%)]", "data-disabled:opacity-60"),
+        ("[&>[data-state]]:bg-white", "[&>[data-state=unchecked]]:bg-[#8c8c8c] [&>[data-state=checked]]:bg-[#0a0a0a]"),
+        ("data-[state=unchecked]:bg-[hsl(0_0%_15%)]", "data-[state=unchecked]:bg-[#1a1a1a] data-[state=unchecked]:border-[#3a3a3a] data-[state=checked]:border-[#f4f4f4]"),
         ("hsla(29_100%_51%_0.2)", "hsla(0_0%_100%_0.12)")]),
     (UI + "components/ConnectionDetails.tsx", [
         ("fgColor='#9C4C00'", "fgColor='#000000'"), ("bgColor='transparent'", "bgColor='#ffffff'"),
@@ -103,7 +106,7 @@ COSMETIC = [
         ("<div className='p-2 rounded-md'>", "<div className='p-2 rounded-md b2b-qr'>")]),
 ]
 REGEX = [(UI + "pages/insights/" + n, [(r"hsla\(29,\s*100%,\s*51%,", "hsla(0,0%,94%,"), (r"hsl\(29 100% 51%\)", "hsl(0 0% 94%)"),
-         (r"#FF7E05", "#f4f4f4")]) for n in ("BlockSizeChart.tsx", "BlockRewardsChart.tsx", "FeeRateChart.tsx")]
+         (r"#FF7E05", "#f4f4f4"), (r"rgba\(255,\s*126,\s*5,", "rgba(244,244,244,")]) for n in ("BlockSizeChart.tsx", "BlockRewardsChart.tsx", "FeeRateChart.tsx")]
 
 
 def cosmetic(up):
@@ -139,6 +142,24 @@ def cosmetic(up):
             if t != s:
                 edits.append((rel, t))
     return edits, warns
+
+
+def recolor_status(up):
+    """Status colours the same as the other apps (green good, yellow warning, red failure); orange warnings become yellow."""
+    status = [(r"#0BC39E|#00BFA3|#00CD98", "#3dd68c"), (r"#EDCE00", "#f0b429"), (r"#FF6B70|#ED1C24|#e93232|#EF4444", "#ff6b6b")]
+    for root, _, files in os.walk(os.path.join(up, UI)):
+        for n in files:
+            if not n.endswith(".tsx"):
+                continue
+            full = os.path.join(root, n)
+            t = open(full, encoding="utf-8").read()
+            u = t
+            for pat, new in status:
+                u = re.sub(pat, new, u, flags=re.I)
+            if "/settings/" in full.replace(os.sep, "/"):
+                u = re.sub(r"orange-(\d+)", r"yellow-\1", u)
+            if u != t:
+                open(full, "w", encoding="utf-8").write(u)
 
 
 def redesign(up):
@@ -198,6 +219,7 @@ def main():
     ce, warns = cosmetic(up)
     for rel, s in ce:
         wr(up, rel, s)
+    recolor_status(up)
     for w in warns + redesign(up):
         print("WARN ", w)
     ui = os.path.join(HERE, "overlay/ui")

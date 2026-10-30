@@ -179,3 +179,21 @@ html {
 .b2b-block {
 	transition: border-color 0.15s, background 0.15s;
 }
+
+/* light theme: stronger outlines so panels and cards stand out from the white page (values are pre-inversion) */
+html[data-theme='light'] {
+	--border: #6a6a6a;
+	--input: #6a6a6a;
+	--card: #121212;
+}
+html[data-theme='light'] [class*='border-white/'] {
+	border-color: rgba(255, 255, 255, 0.45) !important;
+}
+html[data-theme='light'] .b2b-block {
+	background: rgba(255, 255, 255, 0.09) !important;
+	border-color: rgba(255, 255, 255, 0.5) !important;
+}
+html[data-theme='light'] .b2b-block-new {
+	background: rgba(255, 255, 255, 0.18) !important;
+	border-color: rgba(255, 255, 255, 0.95) !important;
+}
