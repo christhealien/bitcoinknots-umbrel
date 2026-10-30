@@ -46,15 +46,6 @@ body {
 	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* faint grid, like the other apps */
-body {
-	background-image:
-		linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-		linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-	background-size: 32px 32px;
-	background-attachment: fixed;
-}
-
 /* numbers read as numbers */
 .tabular-nums,
 .font-mono {
@@ -180,20 +171,90 @@ html {
 	transition: border-color 0.15s, background 0.15s;
 }
 
-/* light theme: stronger outlines so panels and cards stand out from the white page (values are pre-inversion) */
+/* ---- one simple surface style, the same in both themes ----
+   A flat panel with a single solid 1px outline. No grid, no gradients, no glow, nothing see-through.
+   (Light mode is this design inverted by the filter above, so the light-mode values below are written as the dark
+   colours that invert into the wanted ones.) */
+:root {
+	--b2b-panel: #0c0c0c;
+	--b2b-panel-hi: #1a1a1a;
+	--b2b-line: #3a3a3a;
+	--b2b-line-hi: #f4f4f4;
+}
 html[data-theme='light'] {
-	--border: #6a6a6a;
-	--input: #6a6a6a;
-	--card: #121212;
+	--b2b-panel: #0a0a0a; /* shows as #f5f5f5 */
+	--b2b-panel-hi: #1c1c1c; /* shows as #e3e3e3 */
+	--b2b-line: #808080; /* shows as #7f7f7f */
+	--b2b-line-hi: #f4f4f4; /* shows as #0b0b0b */
 }
-html[data-theme='light'] [class*='border-white/'] {
-	border-color: rgba(255, 255, 255, 0.45) !important;
+html,
+body,
+#root {
+	background-image: none !important;
 }
-html[data-theme='light'] .b2b-block {
-	background: rgba(255, 255, 255, 0.09) !important;
-	border-color: rgba(255, 255, 255, 0.5) !important;
+
+/* cards, dialogs and the dock */
+.bg-card-gradient,
+.bg-dock-gradient {
+	background: var(--b2b-panel) !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	border: 1px solid var(--b2b-line) !important;
+	box-shadow: none !important;
 }
-html[data-theme='light'] .b2b-block-new {
-	background: rgba(255, 255, 255, 0.18) !important;
-	border-color: rgba(255, 255, 255, 0.95) !important;
+/* the soft gradient outlines the app draws with a masked span */
+span[aria-hidden][style*='mask'] {
+	display: none !important;
+}
+/* any outline the app draws with a translucent white */
+[class*='border-white/'],
+[class*='border-[0.5px]'] {
+	border-color: var(--b2b-line) !important;
+	border-width: 1px;
+}
+/* inner panels, inputs and selects */
+[class*='bg-neutral-900/'],
+[class*='bg-[#272727]'] {
+	background: var(--b2b-panel) !important;
+	border: 1px solid var(--b2b-line) !important;
+	box-shadow: none !important;
+}
+[class*='bg-[#2C2C2C]'] {
+	background: var(--b2b-panel-hi) !important;
+}
+[class*='after:bg-white/20']::after {
+	background: var(--b2b-line) !important;
+}
+
+/* the four stat tiles: same background, thin dividers instead of alternating shades */
+[class*='nth-child(4n+2)'] > * {
+	background: transparent !important;
+}
+[class*='nth-child(4n+2)'] > *:nth-child(even) {
+	border-left: 1px solid var(--b2b-line);
+}
+[class*='nth-child(4n+2)'] > *:nth-child(n + 3) {
+	border-top: 1px solid var(--b2b-line);
+}
+@media (min-width: 768px) {
+	[class*='nth-child(4n+2)'] > *:nth-child(n + 2) {
+		border-left: 1px solid var(--b2b-line);
+	}
+	[class*='nth-child(4n+2)'] > *:nth-child(n + 3) {
+		border-top: 0;
+	}
+}
+
+/* latest blocks */
+.b2b-block {
+	background: var(--b2b-panel) !important;
+	border: 1px solid var(--b2b-line) !important;
+	transition: border-color 0.15s, background 0.15s;
+}
+.b2b-block:hover {
+	border-color: var(--b2b-line-hi) !important;
+}
+.b2b-block-new {
+	background: var(--b2b-panel-hi) !important;
+	border-color: var(--b2b-line-hi) !important;
 }
