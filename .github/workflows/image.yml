@@ -29,7 +29,9 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   UI_REPO: Horizon-btc/umbrel-bitcoin
-  UI_REF: master
+  # Pinned: upstream moved to newer globe libraries (react-globe.gl 2.38 / three-globe 2.45) and the globe stopped drawing.
+  # Change this to master (or a newer commit) once the globe is checked against it.
+  UI_REF: 4bcf1fd1596c4233057f90f862e1a47b6d8c797b
 jobs:
   resolve:
     runs-on: ubuntu-latest
