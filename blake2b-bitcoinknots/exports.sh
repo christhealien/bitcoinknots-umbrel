@@ -55,8 +55,9 @@ if [[ ! -f "${BITCOIN_ENV_FILE}" ]]; then
 		BITCOIN_RPC_PASS=$(echo "$BITCOIN_RPC_DETAILS" | tail -1)
 	fi
 
-	echo "export APP_BLAKE2B_KNOTS_RPC_USER='${BITCOIN_RPC_USER}'"	>> "${BITCOIN_ENV_FILE}"
-	echo "export APP_BLAKE2B_KNOTS_RPC_PASS='${BITCOIN_RPC_PASS}'"	>> "${BITCOIN_ENV_FILE}"
+	# owner-only: the file holds the RPC password
+	( umask 077
+	printf "export APP_BLAKE2B_KNOTS_RPC_USER='%s'\nexport APP_BLAKE2B_KNOTS_RPC_PASS='%s'\n" "${BITCOIN_RPC_USER}" "${BITCOIN_RPC_PASS}" >> "${BITCOIN_ENV_FILE}" )
 fi
 
 . "${BITCOIN_ENV_FILE}"
